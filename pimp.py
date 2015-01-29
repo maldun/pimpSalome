@@ -63,6 +63,17 @@ class Pimp(object):
         self.python_bin = self.salome_home + '/prerequisites/' + python_ver + '/bin/python'
         print self.python_bin
 
+    def getPackages(self):
+        """
+        Get packages to install
+        """
+        #Check for numpy
+        exec(self.findKeyWordOption('INSTALL_NUMPY'))
+        self.install_numpy=INSTALL_NUMPY
+        # Check for scipy
+        exec(self.findKeyWordOption('INSTALL_SCIPY'))
+        self.install_scipy=INSTALL_SCIPY
+        
     def getNumpyBuildConfig(self):
 
         output = []
@@ -77,7 +88,7 @@ class Pimp(object):
         exec(self.findKeyWordOption('NUMPY_SRC'))
         NUMPY_SRC = os.path.expanduser(NUMPY_SRC)
         numpy_setup = NUMPY_SRC + '/setup.py'
-        numpy_home =  self.salome_home + '/prerequisites/' + self.findProgram('Numpy') + '/'
+        numpy_home =  self.salome_home + '/prerequisites/' + self.findProgram('Numpy')
         
         #clean up
         subprocess.call([self.python_bin,numpy_setup,'clean'])
@@ -95,6 +106,51 @@ class Pimp(object):
         subprocess.call(['rm', self.debian_lib + libg])
         subprocess.call(['ln','-s', self.system_lib + libg, self.debian_lib + libg])
 
+    def getScipyBuildConfig(self):
+
+        output = []
+        exec(self.findKeyWordOption('NUMPY_FC'))
+        output+=[NUMPY_FC]
+
+        return output
+
+    def writeScipyShellScript(self,scipy_setup,scipy_home): # Maybe useful later
+        WORK_DIR=os.getcwd()
+        script = open(WORK_DIR + '/scipy.sh','w')
+        lines = [self.python_bin,' ',scipy_setup,' build','\n']
+
+        # write file
+        script.writelines(lines)
+        script.close()
+        
+    def installScipy(self):
+        """
+        Installation script for scipy
+        """
+        # get directories
+        exec(self.findKeyWordOption('SCIPY_SRC'))
+        SCIPY_SRC = os.path.expanduser(SCIPY_SRC)
+        scipy_setup = SCIPY_SRC + '/setup.py'
+        scipy_home =  self.salome_home + '/prerequisites/' + self.findProgram('Scipy') + '/'
+        
+        #clean up
+
+        subprocess.call([self.python_bin,scipy_setup,'clean'],
+                        env=os.environ,cwd=SCIPY_SRC)
+        #build
+        np_opts = self.getScipyBuildConfig()
+        #self.writeScipyShellScript(scipy_setup,scipy_home)
+        subprocess.call([self.python_bin,'setup.py','build'] + np_opts,
+                         env=os.environ,cwd=SCIPY_SRC)
+        #install
+        subprocess.call([self.python_bin,scipy_setup,'install',
+                         '--force','--prefix=' + scipy_home],
+                         env=os.environ,cwd=SCIPY_SRC)
+
+        #post install (assuming install goes to lib64)
+        subprocess.call(['rm','-r', scipy_home + '/lib'])
+        subprocess.call(['ln','-s', scipy_home + '/lib64',scipy_home + '/lib'])
+        
     def setup(self):
         
         # set basic paths
@@ -102,7 +158,11 @@ class Pimp(object):
         self.getFolders()
         self.getPythonBin()
         self.getLibDirs()
+        self.getPackages()
         # install packages
-        self.installNumpy()
+        if self.install_numpy:
+            self.installNumpy()
+        if self.install_scipy:
+            self.installScipy()            
 
 Pimp()
