@@ -67,13 +67,52 @@ class Pimp(object):
         """
         Get packages to install
         """
+        #Check for Cython
+        exec(self.findKeyWordOption('INSTALL_CYTHON'))
+        self.install_cython=INSTALL_CYTHON  
         #Check for numpy
         exec(self.findKeyWordOption('INSTALL_NUMPY'))
-        self.install_numpy=INSTALL_NUMPY
+        self.install_numpy=INSTALL_NUMPY        
         # Check for scipy
         exec(self.findKeyWordOption('INSTALL_SCIPY'))
         self.install_scipy=INSTALL_SCIPY
+
+    def getCythonBuildConfig(self):
+        output = []
+
+        return output
+
+    def installCython(self):
+        """
+        Installation script for Cython
+        """
+        # get directories
+        exec(self.findKeyWordOption('CYTHON_SRC'))
+        CYTHON_SRC = os.path.expanduser(CYTHON_SRC)
+        exec(self.findKeyWordOption('CYTHON_PREFIX'))
+        #scipy_setup = SCIPY_SRC + '/setup.py'
+        cython_home =  self.salome_home + '/prerequisites/' + CYTHON_PREFIX
         
+        #clean up
+        #subprocess.call([self.python_bin,scipy_setup,'clean'],
+        #                env=os.environ,cwd=SCIPY_SRC)
+        #build+install
+        np_opts = self.getCythonBuildConfig()
+        # crate Cython dir
+        subprocess.call(['mkdir',cython_home])
+        #self.writeScipyShellScript(scipy_setup,scipy_home)
+        subprocess.call([self.python_bin,'setup.py','install','--prefix=' + cython_home] + np_opts,
+                         env=os.environ,cwd=CYTHON_SRC)
+        # #install
+        # subprocess.call([self.python_bin,scipy_setup,'install',
+        #                  '--force','--prefix=' + scipy_home],
+        #                  env=os.environ,cwd=SCIPY_SRC)
+
+        # #post install (assuming install goes to lib64)
+        # subprocess.call(['rm','-r', scipy_home + '/lib'])
+        # subprocess.call(['ln','-s', scipy_home + '/lib64',scipy_home + '/lib'])
+
+    
     def getNumpyBuildConfig(self):
 
         output = []
@@ -160,6 +199,8 @@ class Pimp(object):
         self.getLibDirs()
         self.getPackages()
         # install packages
+        if self.install_cython:
+            self.installCython()
         if self.install_numpy:
             self.installNumpy()
         if self.install_scipy:
