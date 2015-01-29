@@ -82,6 +82,19 @@ class Pimp(object):
 
         return output
 
+    def setSalomeForCython(self,cython_home):
+        exec(self.findKeyWordOption('SALOME_APPLI_DIR'))
+        SALOME_APPLI_DIR=os.path.expanduser(SALOME_APPLI_DIR)
+        env_scr = open(SALOME_APPLI_DIR + '/setCython.sh','w')
+        command = """export PYTHONPATH='""" + cython_home
+        command += """/lib64/python2.7/site-packages/':$PYTHONPATH"""
+
+        exec(self.findKeyWordOption('SALOME_EXEC'))
+        salome_appli= SALOME_APPLI_DIR + '/' + SALOME_EXEC
+        
+        env_scr.writelines(['\n',command,'\n',salome_appli, '\n'])
+        env_scr.close()
+
     def installCython(self):
         """
         Installation script for Cython
@@ -92,7 +105,7 @@ class Pimp(object):
         exec(self.findKeyWordOption('CYTHON_PREFIX'))
         #scipy_setup = SCIPY_SRC + '/setup.py'
         cython_home =  self.salome_home + '/prerequisites/' + CYTHON_PREFIX
-        
+
         #clean up
         #subprocess.call([self.python_bin,scipy_setup,'clean'],
         #                env=os.environ,cwd=SCIPY_SRC)
@@ -101,17 +114,12 @@ class Pimp(object):
         # crate Cython dir
         subprocess.call(['mkdir',cython_home])
         #self.writeScipyShellScript(scipy_setup,scipy_home)
-        subprocess.call([self.python_bin,'setup.py','install','--prefix=' + cython_home] + np_opts,
+        subprocess.call([self.python_bin,'setup.py','install','--force',
+                         '--prefix=' + cython_home] + np_opts,
                          env=os.environ,cwd=CYTHON_SRC)
-        # #install
-        # subprocess.call([self.python_bin,scipy_setup,'install',
-        #                  '--force','--prefix=' + scipy_home],
-        #                  env=os.environ,cwd=SCIPY_SRC)
-
-        # #post install (assuming install goes to lib64)
-        # subprocess.call(['rm','-r', scipy_home + '/lib'])
-        # subprocess.call(['ln','-s', scipy_home + '/lib64',scipy_home + '/lib'])
-
+        
+        # #post install
+        self.setSalomeForCython(cython_home)
     
     def getNumpyBuildConfig(self):
 
@@ -152,16 +160,7 @@ class Pimp(object):
         output+=[NUMPY_FC]
 
         return output
-
-    def writeScipyShellScript(self,scipy_setup,scipy_home): # Maybe useful later
-        WORK_DIR=os.getcwd()
-        script = open(WORK_DIR + '/scipy.sh','w')
-        lines = [self.python_bin,' ',scipy_setup,' build','\n']
-
-        # write file
-        script.writelines(lines)
-        script.close()
-        
+ 
     def installScipy(self):
         """
         Installation script for scipy
