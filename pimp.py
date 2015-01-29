@@ -85,7 +85,7 @@ class Pimp(object):
     def setSalomeForCython(self,cython_home):
         exec(self.findKeyWordOption('SALOME_APPLI_DIR'))
         SALOME_APPLI_DIR=os.path.expanduser(SALOME_APPLI_DIR)
-        env_scr = open(SALOME_APPLI_DIR + '/setCython.sh','w')
+        env_scr = open(SALOME_APPLI_DIR + '/runSalomeDefault.sh','w')
         command = """export PYTHONPATH='""" + cython_home
         command += """/lib64/python2.7/site-packages/':$PYTHONPATH"""
 
